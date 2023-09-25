@@ -1,4 +1,3 @@
-import "./App.css";
 import { Duck } from "./demo.ts";
 
 interface Props {

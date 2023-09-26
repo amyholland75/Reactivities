@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { ducks } from "../../demo";
 import DuckItem from "../../duckitem";
-import axios from "axios";
 import { Container } from "semantic-ui-react";
 import { Activity } from "../models/activity";
 import NavBar from "./NavBar";
 import ActivityDashboard from "../../features/activities/dashboard/ActivityDashboard";
 import { v4 as uuid } from "uuid";
+import agent from "../api/agent";
+import LoadingComponent from "./LoadingComponents";
 
 function App() {
   const [activities, setActivites] = useState<Activity[]>([]);
@@ -14,14 +15,20 @@ function App() {
     Activity | undefined
   >(undefined);
   const [editMode, setEditMode] = useState(false);
+  const [loading, setloading] = useState(true);
+  const [submitting, setsubmitting] = useState(false);
   // what is type inferences?
 
   useEffect(() => {
-    axios
-      .get<Activity[]>("http://localhost:5000/api/activities")
-      .then((response) => {
-        setActivites(response.data);
+    agent.Activities.list().then((response) => {
+      let activities: Activity[] = [];
+      response.forEach((activity) => {
+        activity.date = activity.date.split("T")[0]; //temp code to format date
+        activities.push(activity);
       });
+      setActivites(activities);
+      setloading(false);
+    });
   }, []);
 
   function handleSelectActivity(id: string) {
@@ -42,19 +49,44 @@ function App() {
   }
 
   function handleCreateOrEditActivity(activity: Activity) {
-    activity.id
-      ? setActivites([
+    setsubmitting(true);
+    console.log("updated activity " + activity.id);
+    if (activity.id) {
+      agent.Activities.update(activity).then(() => {
+        setActivites([
           ...activities.filter((x) => x.id !== activity.id),
           activity,
-        ])
-      : setActivites([...activities, { ...activity, id: uuid() }]);
-    setEditMode(false);
+        ]); //remove the activity with the matching array and then add using the spread opeerator
+      });
+    } else {
+      activity.id = uuid();
+      agent.Activities.create(activity).then(() => {
+        setActivites([...activities, activity]);
+      });
+    }
     setSelectedActivity(activity);
+    setEditMode(false);
+    setsubmitting(false);
   }
 
-  function handleDeleteActivity(id: string) {
-    setActivites([...activities.filter((x) => x.id !== id)]);
+  function sleep(ms: number) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
+
+  async function handleDeleteActivity(id: string) {
+    setsubmitting(true);
+    console.log("started Deleting");
+    await sleep(2000).then(() => {
+      console.log("slept!");
+    });
+    agent.Activities.delete(id).then(() => {
+      setActivites([...activities.filter((x) => x.id !== id)]);
+    });
+    console.log("end Deleting");
+    setsubmitting(false);
+  }
+
+  if (loading) return <LoadingComponent content="Loading app...." />;
 
   return (
     <>
@@ -70,6 +102,7 @@ function App() {
           closeForm={handleFormClose}
           createOrEdit={handleCreateOrEditActivity}
           deleteActivity={handleDeleteActivity}
+          submitting={submitting}
         />
       </Container>
 

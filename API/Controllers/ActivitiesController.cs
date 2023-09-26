@@ -30,7 +30,7 @@ public class ActivitiesController : BaseAPIController
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> EditActivity(Guid id, Activity activity)
+    public async Task<IActionResult> EditActivity(Guid id, Activity activity) //id comes from URL, activity is passed as body
     {
         activity.Id = id;
         await Mediator.Send(new Edit.Command {Activity = activity}); 

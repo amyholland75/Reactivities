@@ -11,14 +11,12 @@ public class ActivitiesController : BaseAPIController
     [HttpGet]
     public async Task<ActionResult<List<Activity>>> GetActivities()
     {
-        Console.WriteLine("In controller getting list");
         return await Mediator.Send(new List.Query());
     }
 
     [HttpGet("{id}")]
     public async Task<ActionResult<Activity>> GetActivity(Guid id)
     {
-        Console.WriteLine(id.ToString());
         return await Mediator.Send(new Details.Query{Id = id}); //curly bracket here are object inialiser
     }
 

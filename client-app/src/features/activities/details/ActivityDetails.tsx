@@ -1,17 +1,18 @@
 import { Button, Card, Icon, Image } from "semantic-ui-react";
-import { Activity } from "../../../app/models/activity";
+import { useStore } from "../../../app/stores/store";
+import LoadingComponent from "../../../app/layout/LoadingComponents";
+import { observer } from "mobx-react-lite";
 
-interface Props {
-  activity: Activity;
-  openForm: (id: string) => void;
-  cancelSelectActivity: () => void;
-}
+export default observer(function ActivityDetails() {
+  const { activityStore } = useStore();
+  const {
+    selectedActivity: activity,
+    openForm,
+    cancelSelectedActivity,
+  } = activityStore; //this is desctrucrting
 
-export default function ActivityDetails({
-  activity,
-  openForm,
-  cancelSelectActivity,
-}: Props) {
+  if (!activity) return <LoadingComponent />; //this is just to remove typescripot errors
+
   return (
     <Card fluid>
       <Image src={`/assets/categoryImages/${activity.category}.jpg`} />
@@ -34,7 +35,7 @@ export default function ActivityDetails({
             content="Edit"
           />
           <Button
-            onClick={cancelSelectActivity}
+            onClick={cancelSelectedActivity}
             basic
             color="grey"
             content="Cancel"
@@ -47,4 +48,4 @@ export default function ActivityDetails({
       </Card.Content>
     </Card>
   );
-}
+});

@@ -9,6 +9,7 @@ import { Button, Item, Segment, Label } from "semantic-ui-react";
 import { useStore } from "../../../app/stores/store";
 import { SyntheticEvent, useState } from "react";
 import { observer } from "mobx-react-lite";
+import { Link } from "react-router-dom";
 
 export default observer(function ActivityList() {
   const { activityStore } = useStore();
@@ -40,7 +41,8 @@ export default observer(function ActivityList() {
               </Item.Description>
               <Item.Extra>
                 <Button
-                  onClick={() => activityStore.setSelectedActivity(activity.id)}
+                  as={Link}
+                  to={`/activities/${activity.id}`}
                   floated="right"
                   content="View"
                   color="blue"

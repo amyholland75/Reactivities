@@ -8,8 +8,6 @@ export default class ActivityStore {
   selectedActivity: Activity | undefined = undefined; //union of types
   editMode: boolean = false;
   loading: boolean = false;
-  loadingInitial: boolean = true;
-  submitting: boolean = false;
 
   constructor() {
     makeAutoObservable(this, {});
@@ -22,44 +20,60 @@ export default class ActivityStore {
   }
 
   loadActivities = async () => {
+    this.setLoading(true);
     //async code must be in try catch block, sync code outside
     try {
       const localActivities = await agent.Activities.list();
       runInAction(() => {
         this.activities.clear();
         localActivities.forEach((activity) => {
-          activity.date = activity.date.split("T")[0]; //temp code to format date
-          this.activities.set(activity.id, activity); //this is setting the state
-          this.setLoadingInitial(false);
+          this.addActivityToMap(activity);
         });
+        this.setLoading(false);
       });
     } catch (error) {
       runInAction(() => {
         console.log(error); //todo add error logging
-        this.setLoadingInitial(false);
+        this.setLoading(false);
       });
     }
   };
 
-  setLoadingInitial = (state: boolean) => {
-    this.loadingInitial = state;
+  private getActivityFromMap = (id: string) => {
+    return this.activities.get(id);
   };
 
-  setSelectedActivity = (id: string) => {
-    this.selectedActivity = this.activities.get(id);
+  private addActivityToMap = (activity: Activity) => {
+    activity.date = activity.date.split("T")[0]; //temp code to format date
+    this.activities.set(activity.id, activity); //this is setting the state
   };
 
-  cancelSelectedActivity = () => {
-    this.selectedActivity = undefined;
+  loadActivity = async (id: string) => {
+    let myActivity = this.getActivityFromMap(id);
+    if (myActivity) {
+      this.selectedActivity = myActivity;
+    } else {
+      this.setLoading(true);
+      try {
+        let myActivity = await agent.Activities.details(id);
+        runInAction(() => {
+          this.addActivityToMap(myActivity);
+          this.selectedActivity = myActivity;
+          this.setLoading(false);
+          return myActivity;
+        });
+      } catch (error) {
+        runInAction(() => {
+          console.log(error); //todo add error logging
+          this.setLoading(false);
+        });
+      }
+    }
+    return this.selectedActivity;
   };
 
-  openForm = (id?: string) => {
-    id ? this.setSelectedActivity(id) : this.cancelSelectedActivity();
-    this.editMode = true;
-  };
-
-  closeForm = () => {
-    this.editMode = false;
+  setLoading = (state: boolean) => {
+    this.loading = state;
   };
 
   createActivity = async (activity: Activity) => {
@@ -106,7 +120,6 @@ export default class ActivityStore {
       await agent.Activities.delete(id);
       runInAction(() => {
         this.activities.delete(id);
-        if (this.selectedActivity?.id === id) this.cancelSelectedActivity;
         this.loading = false;
       });
     } catch (error) {
